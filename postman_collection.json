@@ -1,0 +1,120 @@
+{
+  "info": {
+    "_postman_id": "b1a2c3d4-e5f6-7890-abcd-ef1234567890",
+    "name": "User Login API (Node.js, Prisma, PostgreSQL)",
+    "description": "A detailed Postman collection for user registration, login, and user listing with cursor-based pagination. Built with Node.js, Express, Prisma, PostgreSQL, and Redis.\n\n**Base URL:** {{base_url}}\n\n**Authentication:** No authentication required for these endpoints.\n\n**Note:** All endpoints are prefixed with `/api`.\n",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:3000" }
+  ],
+  "item": [
+    {
+      "name": "Register User",
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "application/json" } ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"testuser@example.com\",\n  \"password\": \"strongpassword123\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/register",
+          "host": ["{{base_url}}"],
+          "path": ["api", "register"]
+        },
+        "description": "**Register a new user**\n\n- **Endpoint:** `POST /api/register`\n- **Body:**\n  - `email` (string, required): User's email address. Must be unique and valid.\n  - `password` (string, required): Password (min 8 characters, strong).\n\n**Example Request:**\n```json\n{\n  \"email\": \"testuser@example.com\",\n  \"password\": \"strongpassword123\"\n}\n```\n\n**Success Response:**\n- **Status:** 201\n```json\n{ \"message\": \"User registered successfully\" }\n```\n\n**Error Responses:**\n- **400:** Validation error\n- **409:** Email already registered\n"
+      },
+      "response": [
+        {
+          "name": "201 Created",
+          "status": "201 Created",
+          "code": 201,
+          "body": "{\n  \"message\": \"User registered successfully\"\n}"
+        },
+        {
+          "name": "400 Bad Request",
+          "status": "400 Bad Request",
+          "code": 400,
+          "body": "{\n  \"error\": \"Password must be at least 8 characters\"\n}"
+        },
+        {
+          "name": "409 Conflict",
+          "status": "409 Conflict",
+          "code": 409,
+          "body": "{\n  \"error\": \"Email already registered\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Login User",
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "application/json" } ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"testuser@example.com\",\n  \"password\": \"strongpassword123\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/login",
+          "host": ["{{base_url}}"],
+          "path": ["api", "login"]
+        },
+        "description": "**Login a user**\n\n- **Endpoint:** `POST /api/login`\n- **Body:**\n  - `email` (string, required): User's email address.\n  - `password` (string, required): Password.\n\n**Example Request:**\n```json\n{\n  \"email\": \"testuser@example.com\",\n  \"password\": \"strongpassword123\"\n}\n```\n\n**Success Response:**\n- **Status:** 200\n```json\n{ \"message\": \"Login successful\" }\n```\n\n**Error Responses:**\n- **400:** Validation error\n- **401:** Invalid email or password\n"
+      },
+      "response": [
+        {
+          "name": "200 OK",
+          "status": "200 OK",
+          "code": 200,
+          "body": "{\n  \"message\": \"Login successful\"\n}"
+        },
+        {
+          "name": "400 Bad Request",
+          "status": "400 Bad Request",
+          "code": 400,
+          "body": "{\n  \"error\": \"Password must be at least 8 characters\"\n}"
+        },
+        {
+          "name": "401 Unauthorized",
+          "status": "401 Unauthorized",
+          "code": 401,
+          "body": "{\n  \"error\": \"Invalid email or password\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Get Users (Paginated)",
+      "request": {
+        "method": "GET",
+        "header": [ { "key": "Content-Type", "value": "application/json" } ],
+        "url": {
+          "raw": "{{base_url}}/api/users?take=10&cursor=0",
+          "host": ["{{base_url}}"],
+          "path": ["api", "users"],
+          "query": [
+            { "key": "take", "value": "10", "description": "Number of users to fetch (default: 10)" },
+            { "key": "cursor", "value": "0", "description": "ID of the last user from the previous page (for pagination)" }
+          ]
+        },
+        "description": "**Get a paginated list of users (cursor-based)**\n\n- **Endpoint:** `GET /api/users`\n- **Query Params:**\n  - `take` (number, optional): Number of users to fetch per page (default: 10).\n  - `cursor` (number, optional): ID of the last user from the previous page.\n\n**Example Request:**\n```
+GET {{base_url}}/api/users?take=10&cursor=0
+```\n\n**Success Response:**\n- **Status:** 200\n```json\n{\n  \"users\": [\n    { \"id\": 1, \"email\": \"user1@example.com\", \"createdAt\": \"2024-06-01T12:00:00.000Z\" },\n    ...\n  ],\n  \"nextCursor\": 11\n}\n```\n\n**Error Responses:**\n- **500:** Internal server error\n"
+      },
+      "response": [
+        {
+          "name": "200 OK",
+          "status": "200 OK",
+          "code": 200,
+          "body": "{\n  \"users\": [\n    { \"id\": 1, \"email\": \"user1@example.com\", \"createdAt\": \"2024-06-01T12:00:00.000Z\" }\n  ],\n  \"nextCursor\": 11\n}"
+        },
+        {
+          "name": "500 Internal Server Error",
+          "status": "500 Internal Server Error",
+          "code": 500,
+          "body": "{\n  \"error\": \"Internal Server Error\"\n}"
+        }
+      ]
+    }
+  ]
+} 
