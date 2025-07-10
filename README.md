@@ -148,12 +148,6 @@ README.md
 
 ---
 
-## 📝 License
-
-MIT
-
----
-
 ## 🙏 Acknowledgements
 
 - [Express](https://expressjs.com/)
