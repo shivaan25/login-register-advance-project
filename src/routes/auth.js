@@ -1,5 +1,5 @@
 const express = require('express');
-const { register, login, getUsers } = require('../controllers/authController');
+const { register, login } = require('../controllers/authController');
 
 const router = express.Router();
 
@@ -22,13 +22,5 @@ router.post('/register', register);
  * @returns 401 { error: 'Invalid email or password' }
  */
 router.post('/login', login);
-
-/**
- * @route GET /api/users
- * @desc Get a paginated list of users (cursor-based)
- * @query take: number (default 10), cursor: number (last user id)
- * @returns 200 { users: Array<{id, email, createdAt}>, nextCursor: number|null }
- */
-router.get('/users', getUsers);
 
 module.exports = router;

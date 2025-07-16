@@ -1,28 +1,39 @@
 const { PrismaClient } = require('@prisma/client');
 const { faker } = require('@faker-js/faker');
+const bcrypt = require('bcrypt');
 
 const prisma = new PrismaClient();
 
-async function main() {
-  const USERS_TO_CREATE = 1000; // Change this number as needed
-
-  const userData = Array.from({ length: USERS_TO_CREATE }).map(() => ({
+async function generateUserBatch(batchSize, plainPassword) {
+  const hashedPassword = await bcrypt.hash(plainPassword, 10);
+  return Array.from({ length: batchSize }).map(() => ({
     email: faker.internet.email(),
-    password: faker.internet.password(12), // In real apps, hash passwords!
+    password: hashedPassword,
     createdAt: faker.date.past(),
   }));
+}
 
-  // Optionally, hash passwords here if you want to simulate real data
-  // for (const user of userData) {
-  //   user.password = await bcrypt.hash(user.password, 10);
-  // }
+async function main() {
+  const TOTAL_USERS = 10_000_000;
+  const BATCH_SIZE = 5000;
+  const PLAIN_PASSWORD = 'Password123!'; // Use this for all users
+  const TOTAL_BATCHES = Math.ceil(TOTAL_USERS / BATCH_SIZE);
 
-  await prisma.user.createMany({
-    data: userData,
-    skipDuplicates: true, // In case of email collisions
-  });
+  let batchesCompleted = 0;
 
-  console.log(`Seeded ${USERS_TO_CREATE} users`);
+  for (let i = 0; i < TOTAL_BATCHES; i++) {
+    const userData = await generateUserBatch(BATCH_SIZE, PLAIN_PASSWORD);
+    await prisma.user.createMany({
+      data: userData,
+      skipDuplicates: true,
+    });
+    batchesCompleted++;
+    if (batchesCompleted % 10 === 0) {
+      console.log(`Completed ${batchesCompleted} / ${TOTAL_BATCHES} batches (${batchesCompleted * BATCH_SIZE} users)`);
+    }
+  }
+
+  console.log(`Seeded up to ${TOTAL_USERS} users. All users have password: ${PLAIN_PASSWORD}`);
 }
 
 main()

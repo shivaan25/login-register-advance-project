@@ -1,0 +1,225 @@
+version: '3.8'
+
+services:
+  # Redis for caching
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-network
+
+  # PostgreSQL database
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: userdb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+  # API Gateway instances (4 instances for load balancing)
+  api-gateway-1:
+    build: ./api-gateway
+    ports:
+      - "3000:3000"
+    environment:
+      - AUTH_SERVICE_URL=http://auth-service-1:3002
+      - USER_SERVICE_URL=http://user-service-1:3001
+      - NODE_ENV=production
+    depends_on:
+      - auth-service-1
+      - user-service-1
+    networks:
+      - app-network
+
+  api-gateway-2:
+    build: ./api-gateway
+    ports:
+      - "3003:3000"
+    environment:
+      - AUTH_SERVICE_URL=http://auth-service-2:3002
+      - USER_SERVICE_URL=http://user-service-2:3001
+      - NODE_ENV=production
+    depends_on:
+      - auth-service-2
+      - user-service-2
+    networks:
+      - app-network
+
+  api-gateway-3:
+    build: ./api-gateway
+    ports:
+      - "3004:3000"
+    environment:
+      - AUTH_SERVICE_URL=http://auth-service-3:3002
+      - USER_SERVICE_URL=http://user-service-3:3001
+      - NODE_ENV=production
+    depends_on:
+      - auth-service-3
+      - user-service-3
+    networks:
+      - app-network
+
+  api-gateway-4:
+    build: ./api-gateway
+    ports:
+      - "3005:3000"
+    environment:
+      - AUTH_SERVICE_URL=http://auth-service-4:3002
+      - USER_SERVICE_URL=http://user-service-4:3001
+      - NODE_ENV=production
+    depends_on:
+      - auth-service-4
+      - user-service-4
+    networks:
+      - app-network
+
+  # Auth Service instances (4 instances)
+  auth-service-1:
+    build: ./auth-service
+    ports:
+      - "3002:3002"
+    environment:
+      - USER_SERVICE_URL=http://user-service-1:3001
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - NODE_ENV=production
+    depends_on:
+      - user-service-1
+    networks:
+      - app-network
+
+  auth-service-2:
+    build: ./auth-service
+    ports:
+      - "3006:3002"
+    environment:
+      - USER_SERVICE_URL=http://user-service-2:3001
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - NODE_ENV=production
+    depends_on:
+      - user-service-2
+    networks:
+      - app-network
+
+  auth-service-3:
+    build: ./auth-service
+    ports:
+      - "3007:3002"
+    environment:
+      - USER_SERVICE_URL=http://user-service-3:3001
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - NODE_ENV=production
+    depends_on:
+      - user-service-3
+    networks:
+      - app-network
+
+  auth-service-4:
+    build: ./auth-service
+    ports:
+      - "3008:3002"
+    environment:
+      - USER_SERVICE_URL=http://user-service-4:3001
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - NODE_ENV=production
+    depends_on:
+      - user-service-4
+    networks:
+      - app-network
+
+  # User Service instances (4 instances)
+  user-service-1:
+    build: ./user-service
+    ports:
+      - "3001:3001"
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/userdb
+      - REDIS_URL=redis://redis:6379
+      - NODE_ENV=production
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - app-network
+
+  user-service-2:
+    build: ./user-service
+    ports:
+      - "3009:3001"
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/userdb
+      - REDIS_URL=redis://redis:6379
+      - NODE_ENV=production
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - app-network
+
+  user-service-3:
+    build: ./user-service
+    ports:
+      - "3010:3001"
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/userdb
+      - REDIS_URL=redis://redis:6379
+      - NODE_ENV=production
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - app-network
+
+  user-service-4:
+    build: ./user-service
+    ports:
+      - "3011:3001"
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/userdb
+      - REDIS_URL=redis://redis:6379
+      - NODE_ENV=production
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - app-network
+
+  # Load Balancer
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./load-balancer/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api-gateway-1
+      - api-gateway-2
+      - api-gateway-3
+      - api-gateway-4
+      - auth-service-1
+      - auth-service-2
+      - auth-service-3
+      - auth-service-4
+      - user-service-1
+      - user-service-2
+      - user-service-3
+      - user-service-4
+    networks:
+      - app-network
+
+volumes:
+  redis_data:
+  postgres_data:
+
+networks:
+  app-network:
+    driver: bridge 
