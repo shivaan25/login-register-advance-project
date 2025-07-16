@@ -4,14 +4,18 @@
   "description": "Scalable user login and registration system with microservices architecture capable of handling 100,000+ requests per second",
   "main": "services/docker-compose.yml",
   "scripts": {
-    "dev": "npm run dev:core",
+    "dev": "npm run env:dev && npm run dev:core",
     "dev:core": "cd services && docker compose up --build postgres redis user-service-1 auth-service-1 api-gateway-1",
-    "dev:scale": "cd services && docker compose up --build",
+    "dev:scale": "npm run env:dev && cd services && docker compose up --build",
     "dev:basic": "cd services && docker compose up postgres redis user-service-1 auth-service-1 api-gateway-1",
     "dev:logs": "cd services && docker compose logs -f",
     "dev:down": "cd services && docker compose down",
     "dev:clean": "cd services && docker compose down -v --remove-orphans && docker system prune -f",
     "dev:rebuild": "npm run dev:clean && npm run install:all && npm run dev:core",
+    "env:dev": "node scripts/env-switch.js development",
+    "env:prod": "node scripts/env-switch.js production",
+    "env:switch": "node scripts/env-switch.js",
+    "env:status": "echo '📋 Current Environment:' && head -5 .env | grep NODE_ENV || echo 'NODE_ENV not set'",
     "install:all": "npm run install:user && npm run install:auth && npm run install:gateway",
     "install:user": "cd services/user-service && npm install",
     "install:auth": "cd services/auth-service && npm install",
@@ -20,12 +24,14 @@
     "prisma:migrate": "cd services/user-service && npx prisma migrate dev",
     "prisma:seed": "node prisma/seed.js",
     "test:load": "node test/load-test.js",
-    "deploy:user": "cd services/user-service && railway up",
-    "deploy:auth": "cd services/auth-service && railway up",
-    "deploy:gateway": "cd services/api-gateway && railway up",
-
+    "deploy": "npm run deploy:all",
+    "deploy:all": "npm run env:prod && npm run deploy:user && npm run deploy:auth && npm run deploy:gateway",
+    "deploy:user": "npm run env:prod && cd services/user-service && railway up",
+    "deploy:auth": "npm run env:prod && cd services/auth-service && railway up",
+    "deploy:gateway": "npm run env:prod && cd services/api-gateway && railway up",
+    "deploy:setup": "node scripts/railway-setup.js",
+    "railway:config": "node scripts/railway-setup.js",
     "seed:help": "echo '\n🌱 SEEDING COMMANDS:\n\n📋 Main Commands:\n  seed:10m         - Seed 10 million users (production)\n  seed:full        - Complete workflow (optimize + seed + restore + verify)\n  seed:dev         - Development test (100K users + verify)\n\n🧪 Testing:\n  seed:test:100k   - Test with 100,000 users\n  seed:test:1m     - Test with 1,000,000 users\n  seed:quick       - Quick seed (original small dataset)\n\n🔧 Database Management:\n  seed:optimize    - Optimize database for bulk seeding\n  seed:restore     - Restore database after seeding\n  seed:clean       - Clean all users from database\n\n📊 Monitoring:\n  seed:verify      - Verify seeding results & performance\n  seed:status      - Show current seeding progress\n\n💡 Recommended workflow:\n  1. npm run seed:test:100k     (test first)\n  2. npm run seed:full          (production seeding)\n'",
-
     "seed:10m": "node prisma/seed-optimized.js",
     "seed:optimize": "node prisma/optimize-db.js",
     "seed:restore": "node prisma/restore-db.js",
@@ -34,15 +40,20 @@
     "seed:verify": "node prisma/seed-verify.js",
     "seed:clean": "node prisma/seed-clean.js",
     "seed:quick": "node prisma/seed.js",
-
     "seed:status": "node -e \"const fs = require('fs'); try { const progress = JSON.parse(fs.readFileSync('seed-progress.json', 'utf8')); console.log('\\n📊 Seeding Progress:'); console.log('├── Users seeded:', progress.usersSeeded.toLocaleString()); console.log('├── Batches completed:', progress.batchesCompleted.toLocaleString()); console.log('├── Last batch ID:', progress.lastBatchId); console.log('└── Progress:', ((progress.usersSeeded / 10000000) * 100).toFixed(2) + '%'); } catch(e) { console.log('❌ No seeding in progress or completed'); }\"",
-
     "seed:count": "node -e \"const { PrismaClient } = require('@prisma/client'); const prisma = new PrismaClient(); prisma.user.count().then(count => { console.log('📊 Total users in database:', count.toLocaleString()); prisma.\\$disconnect(); }).catch(console.error);\"",
-
     "seed:full": "npm run seed:optimize && npm run seed:10m && npm run seed:restore && npm run seed:verify",
     "seed:dev": "npm run seed:test:100k && npm run seed:verify"
   },
-  "keywords": ["microservices", "scalable", "authentication", "nodejs", "redis", "postgresql", "docker"],
+  "keywords": [
+    "microservices",
+    "scalable",
+    "authentication",
+    "nodejs",
+    "redis",
+    "postgresql",
+    "docker"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
@@ -58,6 +69,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "axios": "^1.10.0",
     "nodemon": "^3.1.10"
   },
   "engines": {

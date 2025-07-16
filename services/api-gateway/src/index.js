@@ -48,7 +48,47 @@ app.get('/health', async (req, res) => {
   }
 });
 
-// Route to Auth Service
+// Specific routes MUST come before general routes to prevent conflicts
+// Manual proxy implementation for auth endpoints to avoid middleware conflicts
+app.post('/api/register', async (req, res) => {
+  try {
+    console.log('Proxying register request to:', `${AUTH_SERVICE_URL}/register`);
+    const response = await axios.post(`${AUTH_SERVICE_URL}/register`, req.body, {
+      headers: { 'Content-Type': 'application/json' },
+      timeout: 10000
+    });
+    res.status(response.status).json(response.data);
+  } catch (error) {
+    console.error('Register proxy error:', error.message);
+    if (error.response) {
+      res.status(error.response.status).json(error.response.data);
+    } else {
+      res.status(503).json({ error: 'Register service unavailable' });
+    }
+  }
+});
+
+app.post('/api/login', async (req, res) => {
+  try {
+    console.log('Proxying login request to:', `${AUTH_SERVICE_URL}/login`);
+    const response = await axios.post(`${AUTH_SERVICE_URL}/login`, req.body, {
+      headers: { 'Content-Type': 'application/json' },
+      timeout: 10000
+    });
+    res.status(response.status).json(response.data);
+  } catch (error) {
+    console.error('Login proxy error:', error.message);
+    if (error.response) {
+      res.status(error.response.status).json(error.response.data);
+    } else {
+      res.status(503).json({ error: 'Login service unavailable' });
+    }
+  }
+});
+
+// TEMPORARILY DISABLED - General routes (after specific ones)
+// Route to Auth Service - CAUSING ROOT PATH PROXY ISSUE
+/*
 app.use('/api/auth', createProxyMiddleware({
   target: AUTH_SERVICE_URL,
   changeOrigin: true,
@@ -60,6 +100,7 @@ app.use('/api/auth', createProxyMiddleware({
     res.status(503).json({ error: 'Auth service unavailable' });
   }
 }));
+*/
 
 // Route to User Service
 app.use('/api/users', createProxyMiddleware({
@@ -71,23 +112,6 @@ app.use('/api/users', createProxyMiddleware({
   onError: (err, req, res) => {
     console.error('User service error:', err);
     res.status(503).json({ error: 'User service unavailable' });
-  }
-}));
-
-// Legacy routes for backward compatibility
-app.post('/api/register', createProxyMiddleware({
-  target: AUTH_SERVICE_URL,
-  changeOrigin: true,
-  pathRewrite: {
-    '^/api/register': '/register'
-  }
-}));
-
-app.post('/api/login', createProxyMiddleware({
-  target: AUTH_SERVICE_URL,
-  changeOrigin: true,
-  pathRewrite: {
-    '^/api/login': '/login'
   }
 }));
 
